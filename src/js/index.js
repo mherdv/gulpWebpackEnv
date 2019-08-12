@@ -1,4 +1,3 @@
-import { Cars } from './Cars';
+// import { Cars } from './Cars';
 
-
-console.log(Cars, 3)
+console.log(1123455);  

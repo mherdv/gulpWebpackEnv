@@ -1,34 +1,79 @@
+const { src, dest, parallel } = require('gulp');
+
 const gulp = require('gulp');
+const pug = require('gulp-pug');
+const { watch } = require('gulp');
 const webpack = require('webpack');
 const webpackStream = require('webpack-stream');
 const webpackConfig = require('./webpack.config.js');
 const sass = require("gulp-sass");
 const autoprefixer = require("gulp-autoprefixer");
-const cssnano = require("gulp-cssnano");
-const browserSync = require("browser-sync");
+const browsersync = require("browser-sync");
+const imagemin = require('gulp-imagemin');
 const plumber = require("gulp-plumber");
-const gulpImport = require("gulp-html-import");
 
+function html() {
+    return src('./src/pug/index.pug')
+        .pipe(pug())
+        .pipe(dest('dist/'))
+}
 
-
-gulp.task('js', () => {
-    gulp.src('./src/js/index.js')
+function js() {
+    return gulp.src('./src/js/index.js')
         .pipe(webpackStream(webpackConfig), webpack)
         .pipe(gulp.dest('./dist/js'))
 
-        .pipe(browserSync.reload({ stream: true }));
-});
+};
+
+function browserSync(done) {
+    browsersync.init({
+        server: {
+            baseDir: "./dist/"
+        },
+        port: 3000
+    });
+    done();
+}
+
+function browserSyncReload(done) {
+    browsersync.reload();
+    done();
+}
 
 
 
-gulp.task("import", function () {
-    gulp
-        .src("./src/index.html")
-        .pipe(gulpImport("./src/html/"))
-        .pipe(gulp.dest("dist"));
-});
+function images() {
+    return gulp
+      .src("./src/img/**/*")
+      .pipe(newer("./dist/img"))
+      .pipe(
+        imagemin([
+          imagemin.gifsicle({ interlaced: true }),
+          imagemin.jpegtran({ progressive: true }),
+          imagemin.optipng({ optimizationLevel: 5 }),
+          imagemin.svgo({
+            plugins: [
+              {
+                removeViewBox: false,
+                collapseGroups: true
+              }
+            ]
+          })
+        ])
+      )
+      .pipe(gulp.dest("./dist/img"));
+  }
 
-gulp.task("scss", () => {
+
+function watchFiles() {
+    watch("./src/scss/*", gulp.series(scss, browserSyncReload) );
+    watch("./src/js/*",  gulp.series(js, browserSyncReload));
+    watch("./src/pug/*",gulp.series(html, browserSyncReload) );
+}
+
+
+
+function scss() {
     return (
         gulp
             .src("src/scss/**/*.scss")
@@ -41,24 +86,11 @@ gulp.task("scss", () => {
             )
             // .pipe(cssnano())
             .pipe(gulp.dest("dist/css"))
-            .pipe(browserSync.reload({ stream: true }))
     );
-});
+};
 
-gulp.task("browser-sync", () => {
-    browserSync({
-        server: {
-            baseDir: "dist"
-        },
-        notify: false
-    });
-});
 
-gulp.task("default", ["browser-sync", "import", "js", "scss"], () => {
-    gulp.watch("./src/js/**/*.js", ["js"]);
-    gulp.watch("./src/scss/**/*.scss", ["scss"]);
-    gulp.watch("./src/index.html", ["import"]);
-    gulp.watch("./src/html/**/*.html", ["import"]);
-    gulp.watch("./dist/*.html").on("change", browserSync.reload);
-    // gulp.watch("./dist/*.js", [browserSync.reload]);
-});
+exports.default = parallel(html, scss, js,browserSync,watchFiles);
+exports.watch = gulp.parallel(watchFiles);
+// exports.images = images;
+

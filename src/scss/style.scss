@@ -1,6 +1,23 @@
+
+$blueColor :blue;
+
 *{
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 
+}
+.wrapper{
+    min-height: 100px;
+    // background: red;
+    span{
+        color :$blueColor;
+        display: inline-block;
+        margin: 10px 0 ;
+        cursor: pointer;
+        transition: all 1s linear;
+        &:hover{
+            background: lightblue
+        }
+    }
 }
